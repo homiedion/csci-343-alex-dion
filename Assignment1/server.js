@@ -96,7 +96,7 @@ function cmdNumCheck(res, query) {
 
 //Grade Stats Logic
 function cmdGradeStats(res, query) {
-  let grades = getQueryKeyValue(query, "grade");
+  let grades = getQueryKeyValue(query, "grades");
 
   let json = {
     average: 0,
