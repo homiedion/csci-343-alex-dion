@@ -2,6 +2,7 @@
  * Example URLs:
  *
  * http://localhost:3000/?cmd=calcDistance&budget=100&mpg=30&fuelCost=5
+ * http://localhost:3000/?cmd=calcCost&distance=600&mpg=30&fuelCost=5
  *
  */
 
@@ -90,7 +91,7 @@ function calcDistance(query) {
     throw Error("fuelCost cannot be 0");
   }
 
-  let result = {distance: (budget * mpg) / fuelCost};
+  let result = {distance: parseFloat(((budget * mpg) / fuelCost).toFixed(2))};
 
   return result;
 }
@@ -115,7 +116,7 @@ function calcCost(query) {
     throw Error("MPG cannot be 0");
   }
 
-  let result = {cost: (distance / mpg) * fuelCost};
+  let result = {cost: parseFloat(((distance / mpg) * fuelCost).toFixed(2))};
 
   return result;
 }
