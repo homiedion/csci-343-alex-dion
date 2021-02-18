@@ -1,6 +1,6 @@
 var http = require('http');
 var server = http.createServer(requestHandler); 
-server.listen(40000, process.env.IP, startHandler);
+server.listen(3000, process.env.IP, startHandler);
 
 function startHandler()
 {
