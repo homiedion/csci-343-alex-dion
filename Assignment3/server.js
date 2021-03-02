@@ -7,7 +7,7 @@ const CONNECTION_INFO = {
     host: process.env.IP,
     user: "root",
     password: "",
-    database: "GAMESTATS"
+    database: "GameStats"
 };
 
 // State
@@ -102,7 +102,7 @@ function stats(req, res)
     else {
     
       // Perform Queries
-      con.query(`SELECT SCORE FROM GAMESTATS ORDER BY SCORE DESC`, function(err, result, fields) {
+      con.query(`SELECT SCORE FROM GameStats ORDER BY Score DESC`, function(err, result, fields) {
       
         if (err) { writeResponse(res, {"error" : err}); }
         else {
@@ -161,7 +161,7 @@ function submit(res, req) {
     else {
     
       // Perform Queries
-      con.query(`insert into GAMESTATS (SCORE) values (?)`, [req.session.guesses], function(err, result, fields) {
+      con.query(`insert into GameStats (Score) values (?)`, [req.session.guesses], function(err, result, fields) {
         if (err) { 
           writeResponse(res, {"error" : err});
          }
