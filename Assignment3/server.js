@@ -40,17 +40,13 @@ function game(req, res) {
     
     // Restart Game
     if (req.session.answer == undefined) {
-      req.session.guesses = 0;
-      req.session.answer = Math.floor(Math.random() * 100) + 1;
-      req.session.answer = 100;
+      resetGame(req);
     }
       
     // Guess: None
     if (req.query.guess == undefined) {
       writeResponse(res, {'gameStatus' : 'Pick a number from 1 to 100.'});
-      req.session.guesses = 0;
-      req.session.answer = Math.floor(Math.random() * 100) + 1;
-      req.session.answer = 100;
+      resetGame(req);
       
     }
     
@@ -182,4 +178,10 @@ function writeResponse(res, obj) {
   res.writeHead(200, {'Content-Type': 'application/json'});
   res.write(JSON.stringify(obj));
   res.end('');
+}
+
+//Reset the game
+function resetGame(req) {
+  req.session.guesses = 0;
+  req.session.answer = Math.floor(Math.random() * 100) + 1;
 }
