@@ -96,8 +96,11 @@ function add(req, res) {
             writeResponse(res, {"error" : err}); 
             return;
           }
+          
+          //Success
+          req.session.sessionGiftsAdded++;
         });
-    
+        
         //Display the list of songs
         displayGifts(req, res, con);
     });
