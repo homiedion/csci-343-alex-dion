@@ -1,0 +1,11 @@
+DROP DATABASE IF EXISTS Gifts;
+
+CREATE DATABASE Gifts;
+
+USE Gifts;
+
+CREATE TABLE Gifts (
+    GiftId int NOT NULL AUTO_INCREMENT,
+    GiftName varchar(100) NOT NULL,
+    PRIMARY KEY (GiftId)
+);
