@@ -1,0 +1,178 @@
+<!--
+REQUIREMENTS:
+[X] Your page must contain a Bootstrap Jumbotron.
+[X] Your page must contain a Bootstrap Navbar.
+[X] Your page must contain at least one Bootstrap List Group.
+[X] Your page must contain at least one Bootstrap Button or Button Group.
+[X] Your page must contain at least one Bootstrap Form (not counting any forms you might have in your Navbar).
+[X] Your page must contain at least one Bootstrap Modal Dialog.
+[X] Your page must contain at least one Bootstrap Dropdown.
+[X] Your page must contain at least one section that uses a Grid Layout.
+-->
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">        
+        
+    <style>
+    #signInDropDownContent {
+      min-width: 20rem;
+    }
+    </style>
+    
+  </head>
+    
+  <body>
+    <div class="container">
+      
+      <!-- Requirement: Jumbotron -->
+      <div class="jumbotron">
+        <h1 class="display-4">Fluffle</h1>
+        <hr class="my-4">
+        <p>
+          Crowd sourced animal tracking.<br>
+          Join the community today!
+        </p>
+        
+        <!-- Requirement: Button -->
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#signUpModal">
+          Sign Up
+        </button>
+      </div>
+      
+      <!-- Requirement: Navbar -->
+      <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <span class="navbar-brand mb-0 h1">Fluffle</span>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item active">
+              <a class="nav-link" href="">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#about">About</a>
+            </li>
+            
+            <!-- Requirement: Dropdown -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="signInDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Sign In
+              </a>
+              <div id="signInDropDownContent" class="dropdown-menu" aria-labelledby="signInDropdown">
+                
+                <form class="px-4 py-3">
+                  <div class="form-group">
+                    <label for="signInDropdownFormEmail">Email address</label>
+                    <input type="email" class="form-control" id="signInDropdownFormEmail1" placeholder="email@example.com">
+                  </div>
+                  <div class="form-group">
+                    <label for="signInDropdownFormPassword1">Password</label>
+                    <input type="password" class="form-control" id="signInDropdownFormPassword1" placeholder="Password">
+                  </div>
+                  <div class="form-group">
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input" id="dropdownCheck">
+                      <label class="form-check-label" for="dropdownCheck">
+                        Remember me
+                      </label>
+                    </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary">Sign in</button>
+                </form>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#signUpModal">Register Account</a>
+                <a class="dropdown-item" href="#">Forgot Password?</a>
+                
+              </div>
+            </li>
+          </ul>
+        </div>
+      </nav>
+      
+      <!-- Requirement: Grid Layout -->
+      <div class="container">
+        <div class="row">
+          <div class="col-8">
+            <h1 id="about" class="display-8">About</h2>
+            <p>
+              Fluffle is a web app that allows its users to share animal sightings with each other.
+              Whether you want to observe nature from a distance or know about potentially dangerous
+              animals in the area Fluffle aims to provide up to date locations.
+            </p>
+            
+          </div>
+          <div class="col-4">
+          
+            <!-- Requirement: List-Group -->
+            <h1 id="features" class="display-8">Recent Sightings</h2>
+            <ul class="list-group">
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Birds
+                <span class="badge badge-primary badge-pill">37</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Rabbits
+                <span class="badge badge-primary badge-pill">14</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Bear
+                <span class="badge badge-primary badge-pill">6</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Skunks
+                <span class="badge badge-primary badge-pill">1</span>
+              </li>
+            </ul>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>        
+    
+    <!--put your modal dialogs here...-->
+    <!-- Requirement: Modal -->
+    <div class="modal fade" id="signUpModal" tabindex="-1" role="dialog" aria-labelledby="signUpModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="signUpModalLabel">Sign Up</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            
+            <!-- Requirement: Form -->
+            <form>
+              <div class="form-group">
+                <label for="inputEmail">Email address</label>
+                <input type="email" class="form-control" id="inputEmail" aria-describedby="emailHelp" placeholder="Enter email">
+                <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+              </div>
+              <div class="form-group">
+                <label for="inputPassword">Password</label>
+                <input type="password" class="form-control" id="inputPassword" aria-describedby="passwordHelp" placeholder="Password">
+                <small id="passwordHelp" class="form-text text-muted">Must be between 8 and 20 characters and contain at least one letter, one number and one special character (@#$%!).</small>
+              </div>
+            </form>
+            
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+    /* global $ */
+    // put your JavaScript code here...
+        
+    </script>
+  </body>
+
+</html>
