@@ -20,6 +20,12 @@
         height: 200px;
         background-color: black;
         border: white 2px solid;
+        padding: 0px !important;
+      }
+
+      .row {
+        margin-left: 0px;
+        margin-right: 0px;
       }
 
       .prize {
@@ -86,7 +92,22 @@
       <!-- Game -->
       <div id="game">
         <div id="boxes" class="row"></div>
-        <p>Guesses: <span id="guesses">0</span></p>
+        <p>Guesses: <span id="guesses">0 </span><span id="maxGuesses"></span></p>
+      </div>
+
+      <!-- Settings -->
+      <div id="gameSettings">
+        <form class="border border-primary p-3">
+          <div class="form-group">
+            <span id="boxCountLabel"></span>
+            <input type="range" min="1" max="100" class="form-control" id="boxCount" name="maxAttempts" value="1">
+          </div>
+          <div class="form-group">
+            <span id="maxAttemptsLabel"></span>
+            <input type="range" min="0" max="100" class="form-control" id="maxAttempts" name="maxAttempts" value="0">
+          </div>
+          <button id="saveSettingsBtn" type="button" class="btn btn-primary">Save</button>
+        </form>
       </div>
 
       <!-- Error -->
@@ -177,6 +198,48 @@
     </div>
   </div>
 
+  <!-- Stats Modal -->
+  <div id='statsDlg' class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-light">
+          <h5 class="modal-title">Game Stats</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div><b>Games Won:</b> <span id="statWins">?</span></div>
+          <div><b>Games Lost:</b> <span id="statLose">?</span></div>
+          <div><b>Total Games:</b> <span id="statTotal">?</span></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div id='historyDlg' class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-light">
+          <h5 class="modal-title">Game History</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="historyContainer">Loading History...</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
     <script>
       $(document).ready(function() {
         let game;
@@ -187,18 +250,23 @@
           user = {};
           user.id = undefined;
           user.email = undefined;
+          user.boxCount = 6;
+          user.maxAttempts = 0;
+
+          user.history = [];
         }
 
         // Initialize the game's model
         function initializeModel() {
           game = {};
-          game.boxCount = 6;
           game.boxes = {};
           game.error = undefined;
           game.guesses = 0;
           game.currentGuess = undefined;
+          game.showSettings = false;
+          game.victory = false;
 
-          for (var i = 1; i <= game.boxCount; i++) {
+          for (var i = 1; i <= user.boxCount; i++) {
             game.boxes[i] = {flipped: false};
           }
         }
@@ -215,13 +283,22 @@
             else {
               game.guesses = json.guesses;
               game.gameOver = json.gameOver;
+              game.victory = json.victory;
               
               // Fetch the user data
               if (json.user !== undefined) {
                 user.id = json.user.id;
                 user.email = json.user.email;
+                user.boxCount = json.user.boxCount;
+                user.maxAttempts = json.user.maxAttempts;
               }
 
+              //Fetch the history
+              if (json.history !== undefined) {
+                user.history = json.history;
+              }
+
+              //Trigger the callback function
               if (callback !== undefined) { callback(); }
             }
 
@@ -248,6 +325,7 @@
           $("#loginBtn").hide();
           $("#registerBtn").hide();
           $("#game").hide();
+          $("#gameSettings").hide();
 
           //Display the correct buttons
           if (!hasUser) {
@@ -264,33 +342,48 @@
             $("#historyBtn").show();
             $("#settingsBtn").show();
             $("#logoutBtn").show();
-            $("#game").show();
 
-            //Empty the voxes
-            $("#boxes").empty();
+            // Display the Game or the settings
+            if (game.showSettings) {
+              $("#gameSettings").show();
 
-            // End the game, show the modal
-            if(game.gameOver == true && game.currentGuess !== undefined) {
-              game.boxes[game.currentGuess].winner = true;
-              $("#confirm").modal("show");
+              $('#boxCount').val(user.boxCount);
+              $('#boxCountLabel').html("<b>Box Count:</b> " + user.boxCount);
+
+              $('#maxAttempts').val(user.maxAttempts);
+              $('#maxAttemptsLabel').html("<b>Max Attempts:</b> " + (user.maxAttempts > 0 ? user.maxAttempts : "Unlimited"));
             }
+            else {
+              $("#game").show();
 
-            //Build the boxes
-            for (var i = 1; i <= game.boxCount; i++) {
-              let box = $("<div class='col-6 box'></div>");
-
-              if(game.boxes[i].winner) {
-                box.addClass("prize");
-              }
-              else if(game.boxes[i].flipped) {
-                box.addClass("flipped");
+              // End the game, show the modal
+              if(game.gameOver == true && game.currentGuess !== undefined) {
+                game.boxes[game.currentGuess].winner = game.victory;
+                $("#confirm").modal("show");
               }
 
-              box.attr("value", i);
-              $("#boxes").append(box);
-            }
+              //Empty the voxes
+              $("#boxes").empty();
 
-            $("#guesses").text(game.guesses);
+              //Build the boxes
+              for (var i = 1; i <= user.boxCount; i++) {
+                let box = $("<div class='col-6 box'></div>");
+
+                if(game.boxes[i].winner) {
+                  box.addClass("prize");
+                }
+                else if(game.boxes[i].flipped) {
+                  box.addClass("flipped");
+                }
+
+                box.attr("value", i);
+                $("#boxes").append(box);
+
+                //Update the display of guesses
+                $("#guesses").text(game.guesses);
+                $("#maxGuesses").text(" out of " + (user.maxAttempts <= 0 ? "unlimited" : user.maxAttempts));
+              }
+            }
           }
 
           //Error Display
@@ -321,9 +414,10 @@
         // Start the game
         function startGame() {
           initializeModel();
-
           sendRequest("whoIsLoggedIn", function() {
-            if (game.error == undefined) { sendRequest("game?max=" + game.boxCount); }
+            if (game.error == undefined) {
+              sendRequest("game?max=" + user.boxCount);
+            }
           });
         }
 
@@ -346,16 +440,45 @@
           $('#registerDlg').modal('show');
         });
 
+        // Reveal the history modal when the button is clicked
+        $('#historyBtn').click(function()  {
+          sendRequest("history", function() {
+            $('#historyDlg').modal('show');
+          });
+        });
+
+        // Reveal the stat modal when the button is clicked
+        $('#statsBtn').click(function()  {
+          sendRequest("history", function() {
+            $('#statsDlg').modal('show');
+          });
+        });
+
+        // Show the settings
+        $('#settingsBtn').click(function()  {
+          game.showSettings = true;
+          updateView();
+        });
+
         //Triggers the login function on the server
         $('#confirmLoginBtn').click(function() {
           let email = $('#email').val().trim();
           let password = $('#password').val().trim();
           
           sendRequest("login?email="+email+"&password="+password, function () {
-            if (game.error == undefined) { sendRequest("game"); }
+            if (game.error == undefined) { startGame(); }
           });
           
           $('#loginDlg').modal('hide');
+        });
+
+        //Modify the range sliders to show thier current value next to them
+        $('#maxAttempts').on('input', function(){
+          $('#maxAttemptsLabel').html("<b>Max Attempts:</b> " + (this.value > 0 ? this.value : "Unlimited"));
+        });
+
+        $('#boxCount').on('input', function(){
+          $('#boxCountLabel').html("<b>Box Count:</b> " + this.value);
         });
 
         //Triggers the register function on the server
@@ -364,18 +487,92 @@
             let password = $('#regPassword').val().trim();
 
             sendRequest("register?email="+email+"&password="+password, function ()  { 
-              if (game.error == undefined) { sendRequest("game"); }
+              if (game.error == undefined) { startGame(); }
             });
             
             $('#registerDlg').modal('hide');
         });
 
+        //Alows the logout button to function
         $('#logoutBtn').click(function()  {
           sendRequest("logout");
         });
 
+        //Allows the new game button to trigger the existing new game modal
         $('#newGameBtn').click(function()  {
           $("#confirm").modal("show");
+        });
+
+        $('#saveSettingsBtn').click(function()  {
+          sendRequest("settings?boxCount="+$("#boxCount").val()+"&maxAttempts="+$("#maxAttempts").val(), function ()  { 
+            if (game.error == undefined) {
+              startGame();
+            }
+          });
+        });
+
+
+        //Update the history when its shown
+        $('#historyDlg').on('shown.bs.modal', function () {
+
+          $('#historyContainer').empty();
+
+          //Create the header
+          let row = $("<div class='row'></div>");
+          let colDate = $(`<div class='col text-center'><b>Date</b></div>`);
+          let colBoxCount = $(`<div class='col text-center'><b>Boxes</b></div>`);
+          let colGuesses = $(`<div class='col text-center'><b>Guesses</b></div>`);
+          let colVictory = $(`<div class='col text-center'><b>Victory</b></div>`);
+
+          row.append(colDate);
+          row.append(colBoxCount);
+          row.append(colGuesses);
+          row.append(colVictory);
+          $('#historyContainer').append(row);
+
+          //Append the history
+          for(let i = 0; i < user.history.length; i++) {
+            row = $("<div class='row'></div>");
+
+            colDate = $(`<div class='col text-center'>${user.history[i].date.split("T")[0]}</div>`);
+            colBoxCount = $(`<div class='col text-center'>${user.history[i].boxCount}</div>`);
+
+            if (user.history[i].maxAttempts <= 0) {
+              colGuesses = $(`<div class='col text-center'>${user.history[i].guessesUsed} / Unlimited</div>`);
+            }
+            else {
+              colGuesses = $(`<div class='col text-center'>${user.history[i].guessesUsed} / ${user.history[i].maxAttempts}</div>`);
+            }
+            colVictory = $(`<div class='col text-center'>${user.history[i].victory ? "Yes" : "No"}</div>`);
+
+            row.append(colDate);
+            row.append(colBoxCount);
+            row.append(colGuesses);
+            row.append(colVictory);
+            $('#historyContainer').append(row);
+          }
+        });
+
+        //Update the history when its shown
+        $('#statsDlg').on('shown.bs.modal', function () {
+
+          //Variables
+          let total = user.history.length;
+          let wins = 0;
+          let lose = 0;
+
+          //Append the history
+          for(let i = 0; i < user.history.length; i++) {
+
+            if (user.history[i].victory) { wins++; }
+            else { lose++; }
+          }
+
+          //Update the values
+          $("#statWins").text("" + wins);
+          $("#statLose").text("" + lose);
+          $("#statTotal").text("" + total);
+
         });
 
         //Start the game

@@ -25,10 +25,12 @@ const sessionOptions = {
 app.use(session(sessionOptions));
 app.get("/", serveIndex);
 app.get("/game", game);
+app.get("/settings", settings);
 app.all('/whoIsLoggedIn', whoIsLoggedIn);                  
 app.all('/register', register);
 app.all('/login', login);
 app.all('/logout', logout);
+app.all('/history', history);
 app.listen(port,  "localhost", startHandler());
 
 /**
@@ -71,7 +73,45 @@ function game(req, res) {
     result = handleError(e);
   }
 
-  if(result) { writeResult(res, result); }
+  if (result) { writeResult(res, result); }
+}
+
+/**
+ * Returns the history
+ * req - The request
+ * res - The response
+ */
+function history(req, res) {
+  if (req.session.user == undefined) {
+    writeResult(res, {'error' : "You must be logged in to view a history!"});
+    return;
+  }
+
+  let con = mysql.createConnection(conInfo);
+  let user = req.session.user.user;
+
+  con.connect(function(err) {
+    if (err) { writeResult(res, {'error' : err}); }
+    else {
+      con.query("SELECT * FROM Game WHERE UserId = ?;", [ user.id ], function (err, result, fields) {
+        if (err)  { writeResult(res, {'error' : err}); }
+
+        let games = [];
+
+        for(let i = 0; i < result.length; i++) {
+          games.push({
+            'date' : result[i].DatePlayed,
+            'boxCount' : result[i].BoxCount,
+            'guessesUsed' : result[i].GuessesUsed,
+            'maxAttempts' : result[i].MaxAttempts,
+            'victory' : result[i].Victory
+          });
+        }
+
+        writeResult(res, {'history' : games});
+      });
+    };
+  });
 }
 
 /**
@@ -93,20 +133,42 @@ function resetGame(req) {
 function evaluateGuess(req, res) {
   validateGuess(req);
 
+  incrementGuesses(req);
+
   if(isGuessCorrect(req)) {
-    incrementGuesses(req);
+    submitScore(req, res, true);
     result = winGame(req, res);
   }
-  else if(isGuessTooHigh(req)) {
-    incrementGuesses(req);
-    result = {gameStatus: "Too high. Guess again!", guesses: req.session.guesses, gameOver: false};
+
+  else if (isOutOfGuesses(req)) {
+    submitScore(req, res, false);
+    result = loseGame(req, res);
   }
+
+  else if(isGuessTooHigh(req)) {
+    result = {gameStatus: "Too high. Guess again!", guesses: req.session.guesses, gameOver: false, victory: false};
+  }
+
   else {
-    incrementGuesses(req);
-    result = {gameStatus: "Too low. Guess again!", guesses: req.session.guesses, gameOver: false};
+    result = {gameStatus: "Too low. Guess again!", guesses: req.session.guesses, gameOver: false, victory: false};
   }
 
   return result;
+}
+
+/**
+ * Check if the user has any remaining guesses
+ * 0 max guesses is treated as infinite guesses
+ * req - The request
+ */
+function isOutOfGuesses(req) {
+
+  let currentGuesses = req.session.guesses;
+  let maxAttempts = req.session.user.user.maxAttempts;
+
+  if (maxAttempts <= 0) { return false; }
+
+  return (currentGuesses >= maxAttempts);
 }
 
 /**
@@ -121,6 +183,28 @@ function validateGuess(req) {
   if(guess < 1 || guess > req.session.max) { throw Error(message); }
 }
 
+function submitScore(req, res, victory) {
+  
+  if (req.session.user == undefined) {
+    writeResult(res, {'error' : "You must be logged in to submit a score!"});
+    return;
+  }
+
+  let con = mysql.createConnection(conInfo);
+  let user = req.session.user.user;
+  let today = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+  con.connect(function(err) {
+    if (err) { writeResult(res, {'error' : err}); }
+    else {
+      con.query("INSERT INTO Game (UserId, DatePlayed, BoxCount, GuessesUsed, MaxAttempts, Victory) VALUES (?, ?, ?, ?, ?, ?)",
+        [ user.id, today, user.boxCount, req.session.guesses, user.maxAttempts, victory ], function (err, result, fields) {
+        if (err)  { writeResult(res, {'error' : err}); }
+      });
+    };
+  });
+}
+
 /**
  * Check if the guess is correct
  * req - The request
@@ -130,7 +214,7 @@ function isGuessCorrect(req) {
 }
 
 /**
- * Successful game completion logic
+ * Success game completion logic (win state)
  * req - The request
  * res - The response
  */
@@ -139,10 +223,30 @@ function winGame(req, res) {
 
   result = {
     gameStatus: `Correct! It took you ${req.session.guesses} guesses. Play Again!`,
-    guesses: req.session.guesses, gameOver: true
+    guesses: req.session.guesses,
+    gameOver: true,
+    victory: true
   };
 
-  writeResult(res, result);
+  return result;
+}
+
+/**
+ * Success game completion logic (lose state)
+ * req - The request
+ * res - The response
+ */
+function loseGame(req, res) {
+  req.session.answer = undefined;
+
+  result = {
+    gameStatus: `Failure! You too too many guesses! Play Again!`,
+    guesses: req.session.guesses,
+    gameOver: true,
+    victory: false
+  };
+
+  return result;
 }
 
 /**
@@ -187,11 +291,67 @@ function handleError(e){
  */
 function whoIsLoggedIn(req, res) {
   if (req.session.user == undefined) {
-    writeResult(res, {'user' : {'id' : undefined, 'email' : undefined}});
+    writeResult(res, {'user' : {
+      'id' : undefined,
+      'email' : undefined,
+      'boxCount' : 6,
+      'maxAttempts' : 0
+    }});
   }
   else {
     writeResult(res, req.session.user);
   }
+}
+
+/**
+ * Updates the user's settings 
+ * req - The request
+ * res - The response
+ */
+function settings(req, res) {
+
+  if (req.session.user == undefined) {
+    writeResult(res, {'error' : "You must be logged in to update settings."});
+    return;
+  }
+
+  let con = mysql.createConnection(conInfo);
+
+  con.connect(function(err) {
+    if (err) { writeResult(res, {'error' : err}); }
+    else {
+    
+      // Update the user's box count
+      con.query("UPDATE User SET BoxCount = ? WHERE Id = ?", [req.query.boxCount, req.session.user.user.id], function(err, result) {
+        if (err) { writeResult(res, {'error' : err}); }
+        req.session.user.user.boxCount = req.query.boxCount;
+
+        // Update the user's max attempts
+        con.query("UPDATE User SET MaxAttempts = ? WHERE Id = ?", [req.query.maxAttempts, req.session.user.user.id], function(err, result) {
+          if (err) { writeResult(res, {'error' : err}); }
+          req.session.user.user.maxAttempts = req.query.maxAttempts;
+
+          //Restart the game
+          con.query("SELECT * FROM User WHERE Email = ?", [req.session.user.user.email], function (err, result, fields) {
+            if (err) { writeResult(res, {'error' : err}); }
+            else {
+              req.session.user = {'user' : {
+                'id' : result[0].Id,
+                'email' : result[0].Email,
+                'boxCount' : result[0].BoxCount,
+                'maxAttempts' : result[0].MaxAttempts,
+              }};
+
+              req.query.max = req.query.boxCount;
+              resetGame(req);
+
+              writeResult(res, req.session.user);
+            }
+          });
+        });
+      });
+    }
+  });
 }
 
 /**
@@ -228,7 +388,12 @@ function register(req, res)
           con.query("SELECT * FROM User WHERE Email = ?", [req.query.email], function (err, result, fields) {
             if (err) { writeResult(res, {'error' : err}); }
             else {
-              req.session.user = {'user' : {'id': result[0].Id, 'email': result[0].Email}};
+              req.session.user = {'user' : {
+                'id' : result[0].Id,
+                'email' : result[0].Email,
+                'boxCount' : result[0].BoxCount,
+                'maxAttempts' : result[0].MaxAttempts,
+              }};
               writeResult(res, req.session.user);
             }
           });
@@ -264,7 +429,12 @@ function login(req, res) {
         if (err) { writeResult(res, {'error' : err}); }
         else {
           if(result.length == 1 && bcrypt.compareSync(req.query.password, result[0].Password)) {
-            req.session.user = {'user' : {'id': result[0].Id, 'email': result[0].Email}};
+            req.session.user = {'user' : {
+              'id' : result[0].Id,
+              'email' : result[0].Email,
+              'boxCount' : result[0].BoxCount,
+              'maxAttempts' : result[0].MaxAttempts,
+            }};
             writeResult(res, req.session.user);
           }
           else  {

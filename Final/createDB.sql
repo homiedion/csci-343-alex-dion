@@ -5,18 +5,22 @@ CREATE DATABASE TreasureHunt;
 use TreasureHunt;
 
 CREATE TABLE User (
-    Id int NOT NULL AUTO_INCREMENT,
-    Email varchar(255) UNIQUE NOT NULL,
-    Password varchar(60) NOT NULL,
+    Id INT NOT NULL AUTO_INCREMENT,
+    Email VARCHAR(255) UNIQUE NOT NULL,
+    Password VARCHAR(60) NOT NULL,
+    BoxCount INT DEFAULT 6,
+    MaxAttempts INT DEFAULT 0,
     PRIMARY KEY (Id)
 );
 
 CREATE TABLE Game (
     Id INT NOT NULL AUTO_INCREMENT,
     UserId INT NOT NULL,
-    DatePlayed TIMESTAMP NOT NULL,
-    Win BOOLEAN NOT NULL,
-    Score INT NOT NULL,
+    DatePlayed DATE NOT NULL,
+    BoxCount INT NOT NULL,
+    GuessesUsed INT NOT NULL,
+    MaxAttempts INT NOT NULL,
+    Victory BOOLEAN NOT NULL,
     FOREIGN KEY (UserId) REFERENCES User(Id),
     PRIMARY KEY (Id)
 );
